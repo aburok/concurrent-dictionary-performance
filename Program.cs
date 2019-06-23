@@ -32,13 +32,22 @@ namespace ConcurrentDictionaryTest
             Console.WriteLine();
 
             int itemsInCache = 3000000;
-            int numberOfThreads = 200;
+            int numberOfThreads = 100;
 
             Console.WriteLine(" NUMBER OF ENTIES IN DICTIONARY : " + itemsInCache);
             Console.WriteLine(" NUMBER OF THREADS: " + numberOfThreads);
+            Console.WriteLine();
+            Console.WriteLine("Press Enter to continue...");
             Console.ReadLine();
 
             FillDictionary(itemsInCache);
+
+            Console.WriteLine();
+            Console.WriteLine("Iterate over dictionary using   dictionary.Select(pair=> pair.Value)   : ");
+            Console.WriteLine("Press Enter to continue...");
+            Console.ReadLine();
+
+            var notLockedTime = RunTasks(numberOfThreads, (dict) => dict.Select(pair => pair.Value).ToList());
 
             Console.WriteLine();
             Console.WriteLine("Iterate over dictionary using   dictionary.Values   : ");
@@ -46,13 +55,6 @@ namespace ConcurrentDictionaryTest
             Console.ReadLine();
 
             var lockedTime = RunTasks(numberOfThreads, (dict) => dict.Values);
-
-            Console.WriteLine();
-            Console.WriteLine("Iterate over dictionary using   dictionary.Select(pair=> pair.Value)   : ");
-            Console.WriteLine("Press Enter to continue...");
-            Console.ReadLine();
-
-            var notLockedTime = RunTasks(numberOfThreads, (dict) => dict.Select(pair => pair.Value));
 
             Console.WriteLine("Press Enter to continue...");
             Console.ReadLine();
@@ -87,13 +89,15 @@ namespace ConcurrentDictionaryTest
             {
                 var id = taskId;
 
-                var task = Task.Factory.StartNew(() =>
+                var task = new Task(() =>
                 {
                     initialTaskExecutionOrder.Enqueue(id);
                     var stopwatch = Stopwatch.StartNew();
                     long counter = 0;
                     Console.WriteLine(id + " - Iterating over dictionary values using Values property");
-                    foreach (var dictValue in valuesFunc(_dict))
+                    var values = valuesFunc(_dict);
+                    Console.WriteLine(id + " - values retrived : " + stopwatch.ElapsedMilliseconds + " [ms]");
+                    foreach (var dictValue in values)
                     {
                         counter++;
                         if (dictValue)
@@ -109,6 +113,8 @@ namespace ConcurrentDictionaryTest
 
                 tasks.Add(task);
             }
+
+            tasks.ToList().ForEach(t=>t.Start());
 
             Task.WaitAll(tasks.ToArray());
 
